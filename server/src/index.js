@@ -5,6 +5,7 @@ const resolvers = require("./resolvers.js");
 const LaunchAPI = require("./datasources/launch");
 const UserAPI = require("./datasources/user");
 const { createStore } = require("./utils");
+require("dotenv").config();
 
 const store = createStore();
 
