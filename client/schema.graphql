@@ -1,0 +1,106 @@
+directive @cacheControl(maxAge: Int, scope: CacheControlScope) on FIELD_DEFINITION | OBJECT | INTERFACE
+
+"""
+Direct the client to resolve this field locally, either from the cache or local resolvers.
+"""
+directive @client(
+  """
+  When true, the client will never use the cache for this value. See
+  https://www.apollographql.com/docs/react/essentials/local-state/#forcing-resolvers-with-clientalways-true
+  """
+  always: Boolean
+) on FIELD | FRAGMENT_DEFINITION | INLINE_FRAGMENT
+
+"""
+Export this locally resolved field as a variable to be used in the remainder of this query. See
+https://www.apollographql.com/docs/react/essentials/local-state/#using-client-fields-as-variables
+"""
+directive @export(
+  """The variable name to export this field as."""
+  as: String!
+) on FIELD
+
+"""
+Specify a custom store key for this result. See
+https://www.apollographql.com/docs/react/advanced/caching/#the-connection-directive
+"""
+directive @connection(
+  """Specify the store key."""
+  key: String!
+
+  """
+  An array of query argument names to include in the generated custom store key.
+  """
+  filter: [String!]
+) on FIELD
+
+type Launch {
+  id: ID!
+  site: String
+  mission: Mission
+  rocket: Rocket
+  isBooked: Boolean!
+}
+
+type Rocket {
+  id: ID!
+  name: String
+  type: String
+}
+
+type User {
+  id: ID!
+  email: String!
+  trips: [Launch]!
+  token: String
+}
+
+type Mission {
+  name: String
+  missionPatch(size: PatchSize): String
+}
+
+enum PatchSize {
+  SMALL
+  LARGE
+}
+
+type Query {
+  launches(
+    """The number of results to show. Must be >= 1. Default = 20"""
+    pageSize: Int
+
+    """
+    If you add a cursor here, it will only return results _after_ this cursor
+    """
+    after: String
+  ): LaunchConnection!
+  launch(id: ID!): Launch
+  me: User
+}
+
+type LaunchConnection {
+  cursor: String!
+  hasMore: Boolean!
+  launches: [Launch]!
+}
+
+type Mutation {
+  bookTrips(launchIds: [ID]!): TripUpdateResponse!
+  cancelTrip(launchId: ID!): TripUpdateResponse!
+  login(email: String): User
+}
+
+type TripUpdateResponse {
+  success: Boolean!
+  message: String
+  launches: [Launch]
+}
+
+enum CacheControlScope {
+  PUBLIC
+  PRIVATE
+}
+
+"""The `Upload` scalar type represents a file upload."""
+scalar Upload

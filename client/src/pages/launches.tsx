@@ -1,7 +1,11 @@
-import React from "react";
+import React, { useState } from "react";
 import { RouteComponentProps } from "@reach/router";
 import { gql, useQuery } from "@apollo/client";
 import LaunchTile from "../components/launch-tile";
+import Button from "../components/button";
+import Header from "../components/header";
+import Loading from "../components/loading";
+import * as GetLaunchListTypes from "./__generated__/GetLaunchList";
 
 export const LAUNCH_TILE_DATA = gql`
   fragment LaunchTile on Launch {
@@ -32,26 +36,41 @@ export const GET_LAUNCHES = gql`
   ${LAUNCH_TILE_DATA}
 `;
 
-interface LauncesProps extends RouteComponentProps {}
+interface LaunchesProps extends RouteComponentProps {}
 
-const Launches: React.FC<LauncesProps> = () => {
-  const { loading, error, data } = useQuery(GET_LAUNCHES);
-  if (loading) return <p>Loading...</p>;
+const Launches: React.FC<LaunchesProps> = () => {
+  const { loading, error, data, fetchMore } = useQuery<
+    GetLaunchListTypes.GetLaunchList,
+    GetLaunchListTypes.GetLaunchListVariables
+  >(GET_LAUNCHES);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+
+  if (loading) return <Loading />;
   if (error) return <p>Error :(</p>;
+  if (!data) return <p>Not found</p>;
 
-  const loadMore = (event) => {};
-
-  const launchList = data.launches.launches.map((launch: any) => (
-    <div key={launch.id}>
-      <LaunchTile launch={launch}></LaunchTile>
-    </div>
-  ));
+  const loadMore = async () => {
+    setIsLoadingMore(true);
+    await fetchMore({ variables: { after: data.launches.cursor } });
+    setIsLoadingMore(false);
+  };
 
   return (
-    <div>
-      {launchList}
-      <button onClick={loadMore}>Load more</button>
-    </div>
+    <>
+      <Header />
+      {data.launches &&
+        data.launches.launches &&
+        data.launches.launches.map((launch: any) => (
+          <LaunchTile key={launch.id} launch={launch} />
+        ))}
+      {data.launches &&
+        data.launches.hasMore &&
+        (isLoadingMore ? (
+          <Loading />
+        ) : (
+          <Button onClick={loadMore}>Load more</Button>
+        ))}
+    </>
   );
 };
 
